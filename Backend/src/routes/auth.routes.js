@@ -8,7 +8,7 @@ authRouter.post('/register',authController.RegisterUserController)
 
 authRouter.post('/login',authController.LoginUserController)
 
-authRouter.post('/logout',authController.LogOutUserController)
+authRouter.get('/logout',authController.LogOutUserController)
 
 authRouter.get('/getme',authMiddleware.authUser,authController.getmeController)
 
