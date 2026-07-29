@@ -1,9 +1,23 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React,{useState} from 'react'
+import { useNavigate,Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 const Login = () => {
-  const handleLogin = (e) => {
+
+  const { loading,handleLogin } = useAuth()
+  const navigate = useNavigate()
+  
+  const [email,setEmail] = useState("")
+  const [password,setPassword] = useState("")
+  
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    await handleLogin({email,password})
+    navigate("/")
+  }
+
+  if(loading){
+    return <h1>Loading...</h1>
   }
 
   return (
@@ -13,12 +27,13 @@ const Login = () => {
           <h1 className="text-3xl font-semibold text-slate-900">Welcome Back</h1>
           <p className="mt-2 text-sm text-slate-500">Sign in to continue to your dashboard</p>
         </div>
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <label htmlFor="email" className="block text-sm font-medium text-slate-700">
               Email
             </label>
             <input
+              onChange={(e) => setEmail(e.target.value)}
               type="email"
               name="email"
               id="email"
@@ -31,6 +46,7 @@ const Login = () => {
               Password
             </label>
             <input
+              onChange={(e) => setPassword(e.target.value)}
               type="password"
               name="password"
               id="password"

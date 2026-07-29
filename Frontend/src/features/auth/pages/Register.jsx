@@ -1,24 +1,38 @@
-import React from 'react'
-import { Link } from "react-router-dom";
-import { useNavigate } from 'react-router-dom'
+import Reac,{ useState } from 'react'
+import { useNavigate,Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const Register = () => {
-  const handleRegister = (e) => {
-    e.preventDefault()
-  }
 
   const navigate = useNavigate()
+  const { loading,handleRegister } = useAuth()
+
+  const [username,setUsername] = useState("")
+  const [email,setEmail] = useState("")
+  const [password,setPassword] = useState("")
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    await handleRegister({username,email,password})
+    navigate("/")
+  }
+
+  if(loading){
+    return <h1>Loading...</h1>
+  }
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
         <h1 className="text-3xl font-semibold text-slate-900 mb-6 text-center">Register</h1>
-        <form onSubmit={handleRegister} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-2">
               Username
             </label>
             <input
+              onChange={(e) => setUsername(e.target.value)}
               type="text"
               name="username"
               id="username"
@@ -31,6 +45,7 @@ const Register = () => {
               Email
             </label>
             <input
+              onChange={(e) => setEmail(e.target.value)}
               type="email"
               name="email"
               id="email"
@@ -43,6 +58,7 @@ const Register = () => {
               Password
             </label>
             <input
+              onChange={(e) => setPassword(e.target.value)}
               type="password"
               name="password"
               id="password"

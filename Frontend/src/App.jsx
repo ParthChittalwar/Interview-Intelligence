@@ -1,13 +1,15 @@
 import React from 'react'
 import { RouterProvider } from "react-router-dom";
 import { router } from "./app.routes.jsx"
-import Login from './features/auth/pages/Login'
-import Register from './features/auth/pages/Register'
+import { AuthProvider } from './features/auth/auth.context.jsx';
+
 
 const App = () => {
   return (
     <div>
-      <RouterProvider router={router} />;
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </div>
   )
 }
