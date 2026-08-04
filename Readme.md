@@ -5,7 +5,7 @@ An AI-powered interview preparation platform that analyzes a candidate's resume 
 ---
 
 
-Live : https://interview-intelligence-8l7z.onrender.com/
+Live : https://interview-intelligence-8l7z.onrender.com/login
 
 
 ---
