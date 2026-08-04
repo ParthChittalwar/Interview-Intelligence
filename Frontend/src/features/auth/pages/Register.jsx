@@ -1,4 +1,4 @@
-import Reac,{ useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate,Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
@@ -10,11 +10,42 @@ const Register = () => {
   const [username,setUsername] = useState("")
   const [email,setEmail] = useState("")
   const [password,setPassword] = useState("")
+  const [submissionError,setSubmissionError] = useState("")
+  const [isSubmitting,setIsSubmitting] = useState(false)
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (submissionError) {
+      setSubmissionError("")
+    }
+  }, [username, email, password])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    await handleRegister({username,email,password})
-    navigate("/")
+
+    if (loading || isSubmitting) return
+
+    setSubmissionError("")
+    setIsSubmitting(true)
+
+    try {
+      await handleRegister({username,email,password})
+      if (!isMountedRef.current) return
+      navigate("/")
+    } catch (error) {
+      if (!isMountedRef.current) return
+      setSubmissionError(error?.message || "Registration failed")
+    } finally {
+      if (isMountedRef.current) {
+        setIsSubmitting(false)
+      }
+    }
   }
 
   if(loading){
@@ -33,6 +64,7 @@ const Register = () => {
             </label>
             <input
               onChange={(e) => setUsername(e.target.value)}
+              value={username}
               type="text"
               name="username"
               id="username"
@@ -46,6 +78,7 @@ const Register = () => {
             </label>
             <input
               onChange={(e) => setEmail(e.target.value)}
+              value={email}
               type="email"
               name="email"
               id="email"
@@ -59,6 +92,7 @@ const Register = () => {
             </label>
             <input
               onChange={(e) => setPassword(e.target.value)}
+              value={password}
               type="password"
               name="password"
               id="password"

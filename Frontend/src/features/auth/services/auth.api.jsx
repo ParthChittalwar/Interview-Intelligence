@@ -5,59 +5,57 @@ const api = axios.create({
     withCredentials: true
 });
 
-export const register = async ({username,email,password}) => {
-
-    try{
-
-        const response = await api.post("/api/auth/register", {username,email,password});
-
-        return response.data
-
-    }catch(error){
-        console.log(error);
-        throw error
+const handleResponse = (response) => {
+    if (!response || typeof response.data === "undefined") {
+        throw new Error("Invalid API response");
     }
+    return response.data;
+};
 
+const handleError = (error) => {
+    if (error.response && error.response.data) {
+        const data = error.response.data;
+        const message = data.message || data.error || JSON.stringify(data);
+        throw new Error(message || "Request failed with response error");
+    }
+    if (error.request) {
+        throw new Error("No response received from server");
+    }
+    throw new Error(error.message || "Request failed");
+};
 
-}
+export const register = async ({username,email,password}) => {
+    try {
+        const response = await api.post("/api/auth/register", {username,email,password});
+        return handleResponse(response);
+    } catch (error) {
+        handleError(error);
+    }
+};
 
 export const login = async ({email,password}) => {
-
-    try{
-
-        const response = await api.post("/api/auth/login", {email,password});    
-
-        return response.data
-
-    }catch(error){
-        console.log(error);
-        throw error
+    try {
+        const response = await api.post("/api/auth/login", {email,password});
+        return handleResponse(response);
+    } catch (error) {
+        handleError(error);
     }
-}
+};
 
 export const logout = async () => {
-
-    try{
-
+    try {
         const response = await api.get("/api/auth/logout");
-
-        return response.data
-
-    }catch(error){
-        console.log(error);
-        throw error
+        return handleResponse(response);
+    } catch (error) {
+        handleError(error);
     }
-}
+};
 
 export const getme = async () => {
-    
-    try{
-
+    try {
         const response = await api.get("/api/auth/getme");
-
-        return response.data
-    }catch(err){
-        console.log(err);
-        throw err
+        return handleResponse(response);
+    } catch (error) {
+        handleError(error);
     }
-}
+};

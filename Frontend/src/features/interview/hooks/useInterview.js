@@ -17,13 +17,12 @@ export const useInterview = () => {
 
     const generateReport = async ({ jobDescription, selfDescription, resumeFile }) => {
         setLoading(true);
-        let response = null;
         try {
             const response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile });
             setReport(response.interviewReport);
             navigate(`/interview/${response.interviewReport._id}`);
+            return response.interviewReport;
         } catch (error) {
-            console.log(error);
             throw error;
         } finally {
             setLoading(false);

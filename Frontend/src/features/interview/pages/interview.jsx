@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useInterview } from '../hooks/useInterview.js'
 import { useParams } from 'react-router-dom'
 
@@ -40,7 +40,7 @@ const QuestionCard = ({ item, index }) => {
         <div className='rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm transition-all duration-200'>
             <div className='flex cursor-pointer items-start gap-3' onClick={() => setOpen(o => !o)}>
                 <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white'>Q{index + 1}</span>
-                <p className='flex-1 text-base font-medium text-slate-700'>{item.question}</p>
+                <p className='flex-1 text-base font-medium text-slate-700'>{item?.question}</p>
                 <span className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
                 </span>
@@ -49,11 +49,11 @@ const QuestionCard = ({ item, index }) => {
                 <div className='mt-4 space-y-4 border-t border-slate-200 pt-4'>
                     <div className='space-y-2'>
                         <span className='inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700'>Intention</span>
-                        <p className='text-sm leading-6 text-slate-600'>{item.intention}</p>
+                        <p className='text-sm leading-6 text-slate-600'>{item?.intention}</p>
                     </div>
                     <div className='space-y-2'>
                         <span className='inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700'>Model Answer</span>
-                        <p className='text-sm leading-6 text-slate-600'>{item.answer}</p>
+                        <p className='text-sm leading-6 text-slate-600'>{item?.answer}</p>
                     </div>
                 </div>
             )}
@@ -64,11 +64,11 @@ const QuestionCard = ({ item, index }) => {
 const RoadMapDay = ({ day }) => (
     <div className='rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm'>
         <div className='mb-4 flex flex-wrap items-center gap-3'>
-            <span className='rounded-full bg-slate-900 px-3 py-1 text-sm font-semibold text-white'>Day {day.day}</span>
-            <h3 className='text-lg font-semibold text-slate-800'>{day.focus}</h3>
+            <span className='rounded-full bg-slate-900 px-3 py-1 text-sm font-semibold text-white'>Day {day?.day}</span>
+            <h3 className='text-lg font-semibold text-slate-800'>{day?.focus}</h3>
         </div>
         <ul className='space-y-3 text-sm text-slate-600'>
-            {day.tasks.map((task, i) => (
+            {(day?.tasks ?? []).map((task, i) => (
                 <li key={i} className='flex items-start gap-2'>
                     <span className='mt-2 h-2 w-2 shrink-0 rounded-full bg-slate-400' />
                     <span>{task}</span>
@@ -80,8 +80,8 @@ const RoadMapDay = ({ day }) => (
 
 const Interview = () => {
     const [activeNav, setActiveNav] = useState('technical')
+    const [downloadError, setDownloadError] = useState(null)
     const { report, loading, getResumePdf } = useInterview()
-    
 
     if (loading || !report) {
         return (
@@ -91,9 +91,16 @@ const Interview = () => {
         )
     }
 
-    const scoreColor = report.matchScore >= 80
+    const technicalQuestions = report?.technicalQuestions ?? []
+    const behavioralQuestions = report?.behavioralQuestions ?? []
+    const preparationPlan = report?.preparationPlan ?? []
+    const skillGaps = report?.skillGaps ?? []
+    const matchScore = typeof report.matchScore === 'number' ? report.matchScore : 0
+    const reportId = report?._id
+
+    const scoreColor = matchScore >= 80
         ? 'border-emerald-500 text-emerald-600'
-        : report.matchScore >= 60
+        : matchScore >= 60
             ? 'border-amber-500 text-amber-600'
             : 'border-rose-500 text-rose-600'
 
@@ -101,6 +108,18 @@ const Interview = () => {
         high: 'bg-rose-100 text-rose-700',
         medium: 'bg-amber-100 text-amber-700',
         low: 'bg-emerald-100 text-emerald-700'
+    }
+
+    const handleDownloadResume = async () => {
+        if (!reportId || typeof getResumePdf !== 'function') {
+            return
+        }
+
+        try {
+            await getResumePdf(reportId)
+        } catch (error) {
+            setDownloadError(error)
+        }
     }
 
     return (
@@ -123,7 +142,7 @@ const Interview = () => {
                         </div>
                     </div>
                     <button
-                        onClick={() => getResumePdf(report._id)}
+                        onClick={handleDownloadResume}
                         className='mt-6 flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800'
                     >
                         <svg className='mr-3 h-4 w-4' xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -140,10 +159,10 @@ const Interview = () => {
                         <section>
                             <div className='mb-6 flex items-center justify-between'>
                                 <h2 className='text-2xl font-semibold text-slate-800'>Technical Questions</h2>
-                                <span className='rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600'>{report.technicalQuestions.length} questions</span>
+                                <span className='rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600'>{technicalQuestions.length} questions</span>
                             </div>
                             <div className='space-y-4'>
-                                {report.technicalQuestions.map((q, i) => (
+                                {technicalQuestions.map((q, i) => (
                                     <QuestionCard key={i} item={q} index={i} />
                                 ))}
                             </div>
@@ -154,10 +173,10 @@ const Interview = () => {
                         <section>
                             <div className='mb-6 flex items-center justify-between'>
                                 <h2 className='text-2xl font-semibold text-slate-800'>Behavioral Questions</h2>
-                                <span className='rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600'>{report.behavioralQuestions.length} questions</span>
+                                <span className='rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600'>{behavioralQuestions.length} questions</span>
                             </div>
                             <div className='space-y-4'>
-                                {report.behavioralQuestions.map((q, i) => (
+                                {behavioralQuestions.map((q, i) => (
                                     <QuestionCard key={i} item={q} index={i} />
                                 ))}
                             </div>
@@ -168,11 +187,11 @@ const Interview = () => {
                         <section>
                             <div className='mb-6 flex items-center justify-between'>
                                 <h2 className='text-2xl font-semibold text-slate-800'>Preparation Road Map</h2>
-                                <span className='rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600'>{report.preparationPlan.length}-day plan</span>
+                                <span className='rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600'>{preparationPlan.length}-day plan</span>
                             </div>
                             <div className='space-y-4'>
-                                {report.preparationPlan.map((day) => (
-                                    <RoadMapDay key={day.day} day={day} />
+                                {preparationPlan.map((day, i) => (
+                                    <RoadMapDay key={day?.day ?? i} day={day} />
                                 ))}
                             </div>
                         </section>
@@ -186,7 +205,7 @@ const Interview = () => {
                         <div className='rounded-2xl bg-slate-50 p-5'>
                             <p className='mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500'>Match Score</p>
                             <div className={`mx-auto flex h-28 w-28 items-center justify-center rounded-full border-8 ${scoreColor}`}>
-                                <span className='text-2xl font-semibold'>{report.matchScore}</span>
+                                <span className='text-2xl font-semibold'>{matchScore}</span>
                                 <span className='ml-1 text-sm font-medium'>%</span>
                             </div>
                             <p className='mt-4 text-center text-sm text-slate-500'>Strong match for this role</p>
@@ -195,9 +214,9 @@ const Interview = () => {
                         <div className='rounded-2xl bg-slate-50 p-5'>
                             <p className='mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500'>Skill Gaps</p>
                             <div className='flex flex-wrap gap-2'>
-                                {report.skillGaps.map((gap, i) => (
-                                    <span key={i} className={`rounded-full px-3 py-2 text-sm font-medium ${severityClassMap[gap.severity] || 'bg-slate-100 text-slate-700'}`}>
-                                        {gap.skill}
+                                {skillGaps.map((gap, i) => (
+                                    <span key={i} className={`rounded-full px-3 py-2 text-sm font-medium ${severityClassMap[gap?.severity] || 'bg-slate-100 text-slate-700'}`}>
+                                        {gap?.skill ?? ''}
                                     </span>
                                 ))}
                             </div>

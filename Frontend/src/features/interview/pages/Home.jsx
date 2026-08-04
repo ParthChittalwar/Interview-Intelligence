@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom'
 
 const Home = () => {
 
-    const { loading, generateReport, reports } = useInterview()
+    const interview = useInterview() || {}
+    const { loading = false, generateReport, reports = [] } = interview
+    const safeReports = Array.isArray(reports) ? reports : []
     const [jobDescription, setJobDescription] = useState("")
     const [selfDescription, setSelfDescription] = useState("")
     const resumeInputRef = useRef()
@@ -12,14 +14,20 @@ const Home = () => {
     const navigate = useNavigate()
 
     const handleGenerateReport = async () => {
-    const resumeFile = resumeInputRef.current?.files?.[0];
+        if (typeof generateReport !== 'function') return
 
-    await generateReport({
-        jobDescription,
-        selfDescription,
-        resumeFile,
-    });
-}
+        const resumeFile = resumeInputRef.current?.files?.[0] ?? null
+
+        try {
+            await generateReport({
+                jobDescription,
+                selfDescription,
+                resumeFile,
+            })
+        } catch (error) {
+            console.error(error)
+        }
+    }
 
     if (loading) {
         return (

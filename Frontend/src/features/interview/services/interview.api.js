@@ -5,6 +5,41 @@ const api = axios.create({
     withCredentials: true,
 });
 
+const parseAxiosError = (error) => {
+    if (axios.isAxiosError(error)) {
+        if (error.response) {
+            const message = error.response.data?.message || error.response.statusText || error.message;
+            return new Error(message || `Request failed with status code ${error.response.status}`);
+        }
+        if (error.request) {
+            return new Error("Network request failed");
+        }
+        return new Error(error.message || "Request failed");
+    }
+    return error instanceof Error ? error : new Error(String(error));
+};
+
+const validateResponse = (response) => {
+    if (!response || typeof response !== "object" || response.status < 200 || response.status >= 300) {
+        throw new Error("Invalid response from server");
+    }
+    if (response.data === undefined || response.data === null) {
+        throw new Error("Invalid server response payload");
+    }
+    return response.data;
+};
+
+const validateBlobResponse = (response) => {
+    if (!response || typeof response !== "object" || response.status < 200 || response.status >= 300) {
+        throw new Error("Invalid response from server");
+    }
+    const blob = response.data;
+    if (!(blob instanceof Blob) || blob.size === 0) {
+        throw new Error("Invalid blob response");
+    }
+    return blob;
+};
+
 export const generateInterviewReport = async ({ jobDescription, selfDescription, resumeFile }) => {
     try {
         const formData = new FormData();
@@ -16,10 +51,9 @@ export const generateInterviewReport = async ({ jobDescription, selfDescription,
                 "Content-Type": "multipart/form-data",
             },
         });
-        return response.data;
+        return validateResponse(response);
     } catch (error) {
-        console.log(error);
-        throw error;
+        throw parseAxiosError(error);
     }
 };
 

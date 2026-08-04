@@ -83,25 +83,33 @@ Job Description:
 ${jobDescription}
 `;
 
-    const response = await ai.models.generateContent({
-        model: "gemini-flash-latest",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json"
-        }
-    });
+    let response;
 
-    let text = "";
+    try {
+        response = await ai.models.generateContent({
+            model: "gemini-flash-latest",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json"
+            }
+        });
+    } catch (err) {
+        throw new Error(`Gemini interview report generation failed: ${err?.message || err}`);
+    }
 
     if (
-        response.candidates &&
-        response.candidates.length &&
-        response.candidates[0].content &&
-        response.candidates[0].content.parts &&
-        response.candidates[0].content.parts.length
+        !response ||
+        !Array.isArray(response.candidates) ||
+        response.candidates.length === 0 ||
+        !response.candidates[0].content ||
+        !Array.isArray(response.candidates[0].content.parts) ||
+        response.candidates[0].content.parts.length === 0 ||
+        typeof response.candidates[0].content.parts[0].text !== "string"
     ) {
-        text = response.candidates[0].content.parts[0].text;
+        throw new Error("Gemini interview report response missing content text");
     }
+
+    let text = response.candidates[0].content.parts[0].text;
 
     console.log("========== GEMINI ==========");
     console.log(text);
@@ -112,26 +120,43 @@ ${jobDescription}
         .replace(/```/g, "")
         .trim();
 
-    return JSON.parse(text);
+    if (!text) {
+        throw new Error("Gemini interview report response text is empty");
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (err) {
+        throw new Error(`Failed to parse Gemini interview report JSON: ${err?.message || err}`);
+    }
 };
 
 const generatePdfFromHtml = async (htmlContent) => {
+    let browser;
 
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.setContent(htmlContent);
-    
-    const pdfBuffer = await page.pdf({ 
-        format : "A4" , margin : {
-            top : "10mm",
-            bottom : "10mm",
-            left : "10mm",
-            right : "10mm"
+    try {
+        browser = await puppeteer.launch({ headless: true });
+        const page = await browser.newPage();
+        await page.setContent(htmlContent);
+        const pdfBuffer = await page.pdf({
+            format: "A4",
+            margin: {
+                top: "10mm",
+                bottom: "10mm",
+                left: "10mm",
+                right: "10mm"
+            }
+        });
+        return pdfBuffer;
+    } catch (err) {
+        throw new Error(`Failed to generate PDF from HTML: ${err?.message || err}`);
+    } finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (_) {}
         }
-     });
-
-    await browser.close();
-    return pdfBuffer
+    }
 }
 
 const generateResumePdf = async ({ resume , selfDescription , jobDescription }) => {
@@ -153,43 +178,59 @@ const generateResumePdf = async ({ resume , selfDescription , jobDescription }) 
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
                     `
 
-    const response = await ai.models.generateContent({
-    model: "gemini-flash-latest",
-    contents: prompt,
-    config: {
-        responseMimeType: "application/json"
-    },
-});
+    let response;
 
-let text = response.candidates[0].content.parts[0].text;
+    try {
+        response = await ai.models.generateContent({
+            model: "gemini-flash-latest",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json"
+            }
+        });
+    } catch (err) {
+        throw new Error(`Gemini resume generation failed: ${err?.message || err}`);
+    }
 
-text = text
-    .replace(/```html/g, "")
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
+    if (
+        !response ||
+        !Array.isArray(response.candidates) ||
+        response.candidates.length === 0 ||
+        !response.candidates[0].content ||
+        !Array.isArray(response.candidates[0].content.parts) ||
+        response.candidates[0].content.parts.length === 0 ||
+        typeof response.candidates[0].content.parts[0].text !== "string"
+    ) {
+        throw new Error("Gemini resume response missing content text");
+    }
 
-console.log(text);
+    let text = response.candidates[0].content.parts[0].text;
 
-let html;
+    text = text
+        .replace(/```html/g, "")
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
 
-try {
+    console.log(text);
 
-    const jsonContent = JSON.parse(text);
+    let html;
 
-    html = jsonContent.html;
+    try {
+        const jsonContent = JSON.parse(text);
+        html = jsonContent.html;
+    } catch (err) {
+        console.log("JSON parse failed, using raw HTML.");
+        html = text;
+    }
 
-} catch (err) {
+    if (!html || typeof html !== "string" || !html.trim()) {
+        throw new Error("Resume HTML content is empty after parsing Gemini response");
+    }
 
-    console.log("JSON parse failed, using raw HTML.");
+    const pdfBuffer = await generatePdfFromHtml(html);
 
-    html = text;
-
-}
-
-const pdfBuffer = await generatePdfFromHtml(html);
-
-return pdfBuffer;
+    return pdfBuffer;
 
 }
 

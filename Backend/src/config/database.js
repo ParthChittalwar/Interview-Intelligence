@@ -3,11 +3,20 @@ dns.setServers(["1.1.1.1", "8.8.8.8"]);
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
+    const uri = process.env.MONGO_URI;
+    if (!uri) {
+        const error = new Error('MONGO_URI environment variable is required for database connection');
+        console.error(error.message);
+        throw error;
+    }
+
     try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('Connected to Database Successfully');
+        await mongoose.connect(uri);
+        console.log('Database connected successfully');
     } catch (error) {
-        console.log("Error in connecting to Database",error);
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Database connection failed:', message);
+        throw error;
     }
 }
 

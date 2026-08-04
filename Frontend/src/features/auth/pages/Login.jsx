@@ -1,4 +1,4 @@
-import React,{useState} from 'react'
+import React,{useState,useEffect,useRef} from 'react'
 import { useNavigate,Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
@@ -9,11 +9,43 @@ const Login = () => {
   
   const [email,setEmail] = useState("")
   const [password,setPassword] = useState("")
+  const [errors,setErrors] = useState({})
+  const [submitError,setSubmitError] = useState("")
+  const isMounted = useRef(true)
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
   
   const handleSubmit = async (e) => {
     e.preventDefault()
-    await handleLogin({email,password})
-    navigate("/")
+    setSubmitError("")
+
+    const validationErrors = {}
+    if (!email.trim()) validationErrors.email = "Email is required"
+    if (!password) validationErrors.password = "Password is required"
+
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors)
+      return
+    }
+
+    setErrors({})
+
+    try {
+      const result = await handleLogin({email,password})
+      if (!isMounted.current) return
+      if (result === false) {
+        setSubmitError("Login failed")
+        return
+      }
+      navigate("/")
+    } catch (error) {
+      if (!isMounted.current) return
+      setSubmitError(error?.message || "Login failed")
+    }
   }
 
   if(loading){
@@ -33,6 +65,7 @@ const Login = () => {
               Email
             </label>
             <input
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
               name="email"
@@ -40,12 +73,16 @@ const Login = () => {
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 transition focus:border-sky-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-100"
               placeholder="you@example.com"
             />
+            {errors.email && (
+              <p className="text-sm text-rose-600">{errors.email}</p>
+            )}
           </div>
           <div className="space-y-2">
             <label htmlFor="password" className="block text-sm font-medium text-slate-700">
               Password
             </label>
             <input
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
               name="password"
@@ -53,6 +90,9 @@ const Login = () => {
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 transition focus:border-sky-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-100"
               placeholder="Enter your password"
             />
+            {errors.password && (
+              <p className="text-sm text-rose-600">{errors.password}</p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -70,6 +110,9 @@ const Login = () => {
           >
             Login
           </button>
+          {submitError && (
+            <p className="text-sm text-rose-600">{submitError}</p>
+          )}
         </form>
         <p className="mt-6 text-center text-sm text-slate-500">
           Don't have an account?
