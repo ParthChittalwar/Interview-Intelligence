@@ -1,6 +1,7 @@
 const { GoogleGenAI } = require("@google/genai")
 const { z } = require("zod")
 const { zodToJsonSchema } = require("zod-to-json-schema")
+const puppeteer = require("puppeteer");
 
 const ai = new GoogleGenAI({ 
     apiKey: process.env.GOOGLE_GENAI_API_KEY
@@ -30,20 +31,47 @@ const interviewReportSchema = z.object({
     title: z.string().describe("The title of the job for which the interview report is generated"),
 })
 
-const generateInterviewReport = async ({ resume , selfDescription , jobDescription }) => {
+
+const generateInterviewReport = async ({ resume, selfDescription, jobDescription }) => {
+
     const prompt = `
 You are an expert technical interviewer.
 
-Generate an interview preparation report based on the candidate's resume and the job description.
+Generate an interview preparation report.
 
-IMPORTANT:
-- Return ONLY valid JSON.
-- The JSON MUST EXACTLY match the provided response schema.
-- Do NOT add any extra fields.
-- Do NOT rename any fields.
-- Every required field must be present.
-- Do NOT wrap the JSON inside markdown (\`\`\`).
-- Do NOT include explanations or notes.
+Return ONLY valid JSON having exactly these fields:
+
+{
+  "matchScore": number,
+  "title": string,
+  "technicalQuestions":[
+    {
+      "question":"",
+      "intention":"",
+      "answer":""
+    }
+  ],
+  "behavioralQuestions":[
+    {
+      "question":"",
+      "intention":"",
+      "answer":""
+    }
+  ],
+  "skillGaps":[
+    {
+      "skill":"",
+      "severity":"low"
+    }
+  ],
+  "preparationPlan":[
+    {
+      "day":1,
+      "focus":"",
+      "tasks":["",""]
+    }
+  ]
+}
 
 Resume:
 ${resume}
@@ -55,17 +83,37 @@ Job Description:
 ${jobDescription}
 `;
 
-   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
-    contents: prompt,
-    config: {
-        responseMimeType: "application/json",
-        responseSchema: zodToJsonSchema(interviewReportSchema),
-    },
-});
+    const response = await ai.models.generateContent({
+        model: "gemini-flash-latest",
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json"
+        }
+    });
 
-    return JSON.parse(response.text)
-}
+    let text = "";
+
+    if (
+        response.candidates &&
+        response.candidates.length &&
+        response.candidates[0].content &&
+        response.candidates[0].content.parts &&
+        response.candidates[0].content.parts.length
+    ) {
+        text = response.candidates[0].content.parts[0].text;
+    }
+
+    console.log("========== GEMINI ==========");
+    console.log(text);
+    console.log("============================");
+
+    text = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+
+    return JSON.parse(text);
+};
 
 const generatePdfFromHtml = async (htmlContent) => {
 
@@ -114,7 +162,11 @@ const generateResumePdf = async ({ resume , selfDescription , jobDescription }) 
         },
     });
 
-    const jsonContent = JSON.parse(response.text)
+    const text = response.text();
+
+    console.log(text);
+
+    const jsonContent = JSON.parse(text);
 
     const pdfBuffer = await generatePdfFromHtml(jsonContent.html)
     return pdfBuffer

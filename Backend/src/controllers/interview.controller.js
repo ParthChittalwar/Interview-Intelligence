@@ -1,9 +1,16 @@
 const pdfParse = require('pdf-parse');
-const { generateInterviewReport } = require('../services/ai.service');
+const { generateInterviewReport , generateResumePdf } = require('../services/ai.service');
 const interviewReportModel = require('../models/interviewReport.model');
 
 
 const generateInterviewReportController = async (req, res) => {
+
+
+    if (!req.file) {
+    return res.status(400).json({
+        message: "Resume PDF is required"
+    });
+}
 
     const resumeContent = await (new pdfParse.PDFParse(Uint8Array.from(req.file.buffer))).getText()
     const { selfDescription, jobDescription } = req.body
@@ -75,7 +82,7 @@ const generateResumePdfController = async (req, res) => {
 
     const {resume , selfDescription , jobDescription} = interviewReport;
 
-    const pdfBuffer = await generateInterviewReport({
+    const pdfBuffer = await generateResumePdf({
         resume,
         selfDescription,
         jobDescription
@@ -83,7 +90,7 @@ const generateResumePdfController = async (req, res) => {
 
     res.set({
         'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename=resume_${interviewReportId}.pdf'
+        'Content-Disposition': `attachment; filename=resume_${interviewReportId}.pdf`
     });
 
     res.status(200).send(pdfBuffer);
