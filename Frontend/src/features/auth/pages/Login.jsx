@@ -13,40 +13,19 @@ const Login = () => {
   const [submitError,setSubmitError] = useState("")
   const isMounted = useRef(true)
 
-  useEffect(() => {
-    return () => {
-      isMounted.current = false
-    }
-  }, [])
   
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setSubmitError("")
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const validationErrors = {}
-    if (!email.trim()) validationErrors.email = "Email is required"
-    if (!password) validationErrors.password = "Password is required"
+  try {
+    await handleLogin({ email, password });
 
-    if (Object.keys(validationErrors).length) {
-      setErrors(validationErrors)
-      return
-    }
+    navigate("/", { replace: true });
 
-    setErrors({})
-
-    try {
-      const result = await handleLogin({email,password})
-      if (!isMounted.current) return
-      if (result === false) {
-        setSubmitError("Login failed")
-        return
-      }
-      navigate("/")
-    } catch (error) {
-      if (!isMounted.current) return
-      setSubmitError(error?.message || "Login failed")
-    }
+  } catch (error) {
+    setSubmitError(error?.message || "Login failed");
   }
+}
 
   if(loading){
     return <h1>Loading...</h1>

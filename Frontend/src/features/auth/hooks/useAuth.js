@@ -1,4 +1,4 @@
-import { useContext,useEffect } from "react";
+import { useContext } from "react";
 import { AuthContext } from "../auth.context";
 import { login,register,logout,getme } from "../services/auth.api";
 
@@ -8,34 +8,42 @@ export const useAuth = () => {
 
     const {user,setUser,loading,setLoading} = context;
 
-    const handleLogin = async ({ email,password}) => {
+    const handleLogin = async ({ email, password }) => {
+    setLoading(true);
 
-        setLoading(true);
-        try{
-            const data = await login({email,password});
-            setUser(data.user);
+    try {
+        await login({ email, password });
 
-        }catch (err) {
-            console.log(err);
-            throw err
-        }finally{
-            setLoading(false);
-        }
+        const data = await getme();
+
+        console.log("GETME:", data);
+
+        setUser(data.user);
+
+        console.log("USER SET");
+    } catch (err) {
+        console.log(err);
+        throw err;
+    } finally {
+        setLoading(false);
     }
+}
 
-    const handleRegister = async ({username,email,password}) => {
+    const handleRegister = async ({ username, email, password }) => {
+    setLoading(true);
 
-        setLoading(true);
-        try{
-            const data = await register({username,email,password});
-            setUser(data.user);
+    try {
+        await register({ username, email, password });
 
-        }catch (err) {
-            console.log(err);
-            throw err
-        }finally{
-            setLoading(false);
-        }
+        const data = await getme();
+
+        setUser(data.user);
+    } catch (err) {
+        console.log(err);
+        throw err;
+    } finally {
+        setLoading(false);
+    }
     }
 
     const handleLogout = async () => {
@@ -53,24 +61,6 @@ export const useAuth = () => {
         }
     }
 
-    useEffect(() => {
-
-        const getAndSetUser = async () => {
-            try{
-                const data = await getme();
-                if (data?.user) {
-                setUser(data.user);
-            }
-            }catch(err){
-                console.log(err);
-                throw err
-            }finally{
-                setLoading(false);
-            }
-        }
-
-        getAndSetUser();
-    }, []);
 
     return {user,loading,handleLogin,handleRegister,handleLogout};
 }

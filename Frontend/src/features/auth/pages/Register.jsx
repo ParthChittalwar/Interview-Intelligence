@@ -14,11 +14,6 @@ const Register = () => {
   const [isSubmitting,setIsSubmitting] = useState(false)
   const isMountedRef = useRef(true)
 
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false
-    }
-  }, [])
 
   useEffect(() => {
     if (submissionError) {
@@ -27,30 +22,23 @@ const Register = () => {
   }, [username, email, password])
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+  e.preventDefault();
 
-    if (loading || isSubmitting) return
+  if (isSubmitting) return;
 
-    setSubmissionError("")
-    setIsSubmitting(true)
+  setSubmissionError("");
+  setIsSubmitting(true);
 
-    try {
-      await handleRegister({username,email,password})
-      if (!isMountedRef.current) return
-      navigate("/")
-    } catch (error) {
-      if (!isMountedRef.current) return
-      setSubmissionError(error?.message || "Registration failed")
-    } finally {
-      if (isMountedRef.current) {
-        setIsSubmitting(false)
-      }
-    }
+  try {
+    await handleRegister({ username, email, password });
+
+    navigate("/", { replace: true });
+  } catch (error) {
+    setSubmissionError(error?.message || "Registration failed");
+  } finally {
+    setIsSubmitting(false);
   }
-
-  if(loading){
-    return <h1>Loading...</h1>
-  }
+};
 
 
   return (
