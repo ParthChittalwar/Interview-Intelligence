@@ -154,23 +154,43 @@ const generateResumePdf = async ({ resume , selfDescription , jobDescription }) 
                     `
 
     const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(resumePdfSchema),
-        },
-    });
+    model: "gemini-flash-latest",
+    contents: prompt,
+    config: {
+        responseMimeType: "application/json"
+    },
+});
 
-    const text = response.text();
+let text = response.candidates[0].content.parts[0].text;
 
-    console.log(text);
+text = text
+    .replace(/```html/g, "")
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+
+console.log(text);
+
+let html;
+
+try {
 
     const jsonContent = JSON.parse(text);
 
-    const pdfBuffer = await generatePdfFromHtml(jsonContent.html)
-    return pdfBuffer
-    
+    html = jsonContent.html;
+
+} catch (err) {
+
+    console.log("JSON parse failed, using raw HTML.");
+
+    html = text;
+
+}
+
+const pdfBuffer = await generatePdfFromHtml(html);
+
+return pdfBuffer;
+
 }
 
 module.exports = { generateInterviewReport , generateResumePdf }

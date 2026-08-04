@@ -1,12 +1,13 @@
 import { getAllInterviewReports, generateInterviewReport, getInterviewReportById , generateResumePdf } from "../services/interview.api.js";
 import { useContext, useEffect } from "react";
 import { InterviewContext } from "../interview.context";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 export const useInterview = () => {
 
     const context = useContext(InterviewContext);
-    const { interviewId } = useParams();
+    const { id } = useParams();
+    const navigate = useNavigate();
 
     if(!context) {
         throw new Error("useInterview must be used within a InterviewProvider");
@@ -20,6 +21,7 @@ export const useInterview = () => {
         try {
             const response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile });
             setReport(response.interviewReport);
+            navigate(`/interview/${response.interviewReport._id}`);
         } catch (error) {
             console.log(error);
             throw error;
@@ -57,31 +59,38 @@ export const useInterview = () => {
     }
 
     const getResumePdf = async (interviewId) => {
-        setLoading(true);
-        let response = null;
-        try {
-            response = await generateResumePdf({ interviewReportId })
-            const url = window.URL.createObjectURL(new Blob([ response ], { type: "application/pdf" }))
-            const link = document.createElement("a")
-            link.href = url
-            link.setAttribute("download", `resume_${interviewReportId}.pdf`)
-            document.body.appendChild(link)
-            link.click()
-        } catch (error) {
-            console.log(error);
-            throw error;
-        } finally {
-            setLoading(false);
-        }
+    setLoading(true);
+
+    try {
+        const response = await generateResumePdf(interviewId);
+
+        const url = window.URL.createObjectURL(
+            new Blob([response], { type: "application/pdf" })
+        );
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `resume_${interviewId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+
+        URL.revokeObjectURL(url);
+        link.remove();
+    } catch (error) {
+        console.log(error);
+        throw error;
+    } finally {
+        setLoading(false);
     }
+};
 
     useEffect(() => {
-        if (interviewId) {
-            getReportById(interviewId);
+        if (id) {
+            getReportById(id);
         } else {
             getReport();
         }
-    }, [interviewId]);
+    }, [id]);
 
     return { loading, report, reports, getReport, generateReport, getResumePdf };
 

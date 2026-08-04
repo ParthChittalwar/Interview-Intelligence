@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useInterview } from '../hooks/useInterview.js'
-import { useParams } from 'react-router'
+import { useParams } from 'react-router-dom'
 
 const NAV_ITEMS = [
     {
@@ -80,14 +80,8 @@ const RoadMapDay = ({ day }) => (
 
 const Interview = () => {
     const [activeNav, setActiveNav] = useState('technical')
-    const { report, getReportById, loading, getResumePdf } = useInterview()
-    const { interviewId } = useParams()
-
-    useEffect(() => {
-        if (interviewId) {
-            getReportById(interviewId)
-        }
-    }, [interviewId])
+    const { report, loading, getResumePdf } = useInterview()
+    
 
     if (loading || !report) {
         return (
@@ -129,7 +123,7 @@ const Interview = () => {
                         </div>
                     </div>
                     <button
-                        onClick={() => getResumePdf(interviewId)}
+                        onClick={() => getResumePdf(report._id)}
                         className='mt-6 flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800'
                     >
                         <svg className='mr-3 h-4 w-4' xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">

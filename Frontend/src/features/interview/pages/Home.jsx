@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { useInterview } from '../hooks/useInterview'
-import { useNavigate } from 'react-router'
+import { useNavigate } from 'react-router-dom'
 
 const Home = () => {
 
@@ -12,10 +12,14 @@ const Home = () => {
     const navigate = useNavigate()
 
     const handleGenerateReport = async () => {
-        const resumeFile = resumeInputRef.current?.files?.[0]
-        const data = await generateReport({ jobDescription, selfDescription, resumeFile })
-        navigate(`/interview/${data._id}`)
-    }
+    const resumeFile = resumeInputRef.current?.files?.[0];
+
+    await generateReport({
+        jobDescription,
+        selfDescription,
+        resumeFile,
+    });
+}
 
     if (loading) {
         return (
